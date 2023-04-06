@@ -6,3 +6,6 @@ wandb
 __pycache__/
 data/
 models/
+
+
+config.json
