@@ -24,11 +24,11 @@ class PokemonDataset(Dataset):
             angle = random.randint(-90, 90)
             image = TF.rotate(image, angle)
         
-        if random.random() > 0.2:
-            image = TF.hflip(image)
+        # if random.random() > 0.2:
+        #     image = TF.hflip(image)
         
-        if random.random() > 0.6:
-            image = TF.vflip(image)
+        # if random.random() > 0.6:
+        #     image = TF.vflip(image)
             
         return image
 
