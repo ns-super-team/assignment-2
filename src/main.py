@@ -16,11 +16,11 @@ from utils import EarlyStopper
 
 
 config = {
-    "lr": 1e-3, # 1e-3
+    "lr": 1e-4, # 1e-3
     "dataset": "Pokemons",
     "epochs": 100,
     "batch_size": 256,
-    "fc_layers": [128*4*4, 256], 
+    "fc_layers": [256*4*4, 256], 
     "image_shape": (64, 64),
     "activations": "ReLU",
     "loss": "cross-entropy",
@@ -204,7 +204,7 @@ def main():
             break
     
     
-    torch.save(model, 'outputs/model.pt')
+    torch.save(model.state_dict(), 'outputs/model.pt')
     if use_wandb:
         artifact = wandb.Artifact('model', type='model')
         artifact.add_file('outputs/model.pt')
