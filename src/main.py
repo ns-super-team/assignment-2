@@ -16,15 +16,18 @@ from utils import EarlyStopper
 
 
 config = {
-    "lr": 1e-3,
+    "lr": 1e-3, # 1e-3
     "dataset": "Pokemons",
     "epochs": 100,
     "batch_size": 256,
-    "fc_layers": [64*16*16, 256], 
+    "fc_layers": [128*4*4, 256], 
+    "image_shape": (64, 64),
     "activations": "ReLU",
     "loss": "cross-entropy",
     "optimizer": "Adam",
-    "augment": True
+    "augment": True,
+    "scheduler": True,
+    "earlyStoppingValue": "loss" # loss/accuracy
 }
 
 def calculate_acc(y_pred, y):
@@ -93,8 +96,8 @@ def prepare_data(data_dir):
     data_train, data_val = train_test_split(data, test_size=0.3, train_size=0.7, random_state=420)
     print(f'train: {len(data_train)}, val: {len(data_val)} | {len(data_train)+len(data_val)}')
 
-    train_data = PokemonDataset(data_train, data_dir, reversed_labels_map, transform=transforms.Resize((128, 128)), augment=config['augment'])
-    val_data = PokemonDataset(data_val, data_dir, reversed_labels_map, transform=transforms.Resize((128, 128)), augment=False)
+    train_data = PokemonDataset(data_train, data_dir, reversed_labels_map, transform=transforms.Resize(config['image_shape']), augment=config['augment'])
+    val_data = PokemonDataset(data_val, data_dir, reversed_labels_map, transform=transforms.Resize(config['image_shape']), augment=False)
 
     train_dataloader = DataLoader(train_data, batch_size=config['batch_size'], shuffle=True)
     val_dataloader = DataLoader(val_data, batch_size=config['batch_size'], shuffle=False)
@@ -138,11 +141,11 @@ def main():
         print('You didnt specify the data path >:(')
         return
     
-    # Training 
-    train_dataloader, val_dataloader, labels_map = prepare_data(data_dir)
-
     if not os.path.isdir('outputs'):
         os.mkdir('outputs')
+    
+    # Training #
+    train_dataloader, val_dataloader, labels_map = prepare_data(data_dir)
 
     # test_dataloader(train_dataloader, labels_map, 'train')
     # test_dataloader(val_dataloader, labels_map, 'val')
@@ -150,8 +153,16 @@ def main():
     model = NeuralNetwork().to(device)
     print(model)
 
-    early_stopper = EarlyStopper(patience=5, min_delta=0.1)
+    if config['earlyStoppingValue'] == 'loss':
+        early_stopper = EarlyStopper(patience=5, delta=0, mode='min')
+    elif config['earlyStoppingValue'] == 'accuracy':
+        early_stopper = EarlyStopper(patience=5, delta=0, mode='max')
+
     optimizer = torch.optim.Adam(model.parameters(), lr=config['lr'])
+    
+    if config['scheduler']:
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=3, factor=0.1)
+    
     loss_fn = nn.CrossEntropyLoss()
 
     epochs = config['epochs']
@@ -166,6 +177,9 @@ def main():
 
         val_history['loss'].append(val_loss)
         val_history['acc'].append(val_acc)
+
+        if config['scheduler']:
+            scheduler.step(val_loss)
         
         # if (epoch % 10 == 0):
         print(f'Epoch {epoch}')
@@ -180,7 +194,12 @@ def main():
                 'val_loss':val_loss, 'val_accuracy': val_acc, 'lr': optimizer.param_groups[0]["lr"]
             })
 
-        if early_stopper(val_loss):
+        if config['earlyStoppingValue'] == 'loss':
+            stop = early_stopper(val_loss)
+        elif config['earlyStoppingValue'] == 'accuracy':
+            stop = early_stopper(val_acc)
+
+        if stop:
             print('Stopping early!!!')
             break
     
