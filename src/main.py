@@ -18,7 +18,7 @@ from utils import EarlyStopper
 config = {
     "lr": 1e-4, # 1e-3
     "dataset": "Pokemons",
-    "epochs": 100,
+    "epochs": 200,
     "batch_size": 256,
     "fc_layers": [256*4*4, 256], 
     "image_shape": (64, 64),
