@@ -5,6 +5,7 @@ wandb
 __pycache__/
 data/
 models/
+outputs/
 
 .env
 config.json
